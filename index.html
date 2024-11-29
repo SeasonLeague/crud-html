@@ -2,110 +2,262 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Todo List</title>
-    <script src="/static/script.js"></script>
+    <title>Todo CRUD App</title>
     <style>
-        :root {
-            --primary-color: #333;
-            --secondary-color: #f4f4f4;
-            --accent-color: #007bff;
-        }
-
         body {
             font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-            background: var(--secondary-color);
-        }
-
-        .container {
-            width: 80%;
             max-width: 600px;
-            margin: 2rem auto;
-            padding: 2rem;
-            background: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border-radius: 5px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
         }
-
-        h1 {
-            text-align: center;
-            color: var(--primary-color);
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-
-        form {
+        #task-form {
             display: flex;
-            margin-bottom: 2rem;
+            margin-bottom: 20px;
         }
-
-        input[type="text"] {
+        #task-input {
             flex-grow: 1;
-            padding: 0.5rem;
-            font-size: 1rem;
+            padding: 10px;
+            margin-right: 10px;
             border: 1px solid #ddd;
-            border-radius: 4px 0 0 4px;
+            border-radius: 4px;
         }
-
-        button {
-            padding: 0.5rem 1rem;
-            background: var(--accent-color);
+        #add-task-btn {
+            padding: 10px 15px;
+            background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 0 4px 4px 0;
+            border-radius: 4px;
             cursor: pointer;
         }
-
-        .task-list {
+        #task-list {
             list-style-type: none;
             padding: 0;
         }
-
-        .task-list li {
-            background: #f9f9f9;
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-            border-radius: 4px;
+        .task-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
         }
-
         .task-actions {
             display: flex;
-            gap: 0.5rem;
+            gap: 10px;
         }
-
-        .edit-link, .delete-link {
-            text-decoration: none;
-            padding: 0.25rem 0.5rem;
+        .edit-btn, .delete-btn {
+            padding: 5px 10px;
+            border: none;
             border-radius: 3px;
+            cursor: pointer;
         }
-
-        .edit-link {
-            background: var(--accent-color);
+        .edit-btn {
+            background-color: #2196F3;
             color: white;
         }
-
-        .delete-link {
-            background: #dc3545;
+        .delete-btn {
+            background-color: #f44336;
             color: white;
+        }
+        #edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Todo List</h1>
+        <h1>Todo CRUD App</h1>
         
-        <form>
-            <input type="text" name="task" placeholder="Enter a new task" required>
-            <button type="submit">Add Task</button>
+        <form id="task-form">
+            <input type="text" id="task-input" placeholder="Enter a new task" required>
+            <button type="submit" id="add-task-btn">Add Task</button>
         </form>
 
-        <ul class="task-list">
+        <ul id="task-list">
             <!-- Tasks will be dynamically loaded here -->
         </ul>
     </div>
-    <script src="/static/script.js"></script>
+
+    <div id="edit-modal">
+        <div class="modal-content">
+            <h2>Edit Task</h2>
+            <form id="edit-form">
+                <input type="text" id="edit-input" required>
+                <div>
+                    <button type="submit">Save</button>
+                    <button type="button" id="cancel-edit">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        const taskForm = document.getElementById('task-form');
+        const taskInput = document.getElementById('task-input');
+        const taskList = document.getElementById('task-list');
+        const editModal = document.getElementById('edit-modal');
+        const editForm = document.getElementById('edit-form');
+        const editInput = document.getElementById('edit-input');
+        const cancelEditBtn = document.getElementById('cancel-edit');
+
+        let currentEditTaskId = null;
+
+        // Fetch tasks on page load
+        async function fetchTasks() {
+            try {
+                const response = await fetch('http://localhost:5000/get_tasks');
+                const tasks = await response.json();
+                
+                // Clear existing tasks
+                taskList.innerHTML = '';
+
+                // Render tasks
+                tasks.forEach(task => {
+                    const li = createTaskElement(task);
+                    taskList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Error fetching tasks:', error);
+            }
+        }
+
+        // Create task element
+        function createTaskElement(task) {
+            const li = document.createElement('li');
+            li.classList.add('task-item');
+            li.dataset.id = task._id;
+
+            li.innerHTML = `
+                <span>${task.task}</span>
+                <div class="task-actions">
+                    <button class="edit-btn">Edit</button>
+                    <button class="delete-btn">Delete</button>
+                </div>
+            `;
+
+            // Edit button event
+            li.querySelector('.edit-btn').addEventListener('click', () => {
+                currentEditTaskId = task._id;
+                editInput.value = task.task;
+                editModal.style.display = 'flex';
+            });
+
+            // Delete button event
+            li.querySelector('.delete-btn').addEventListener('click', () => {
+                deleteTask(task._id);
+            });
+
+            return li;
+        }
+
+        // Add task
+        async function addTask(taskText) {
+            try {
+                const response = await fetch('http://localhost:5000/create_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ task: taskText })
+                });
+
+                if (response.ok) {
+                    const newTask = await response.json();
+                    const li = createTaskElement(newTask);
+                    taskList.appendChild(li);
+                    taskInput.value = '';
+                }
+            } catch (error) {
+                console.error('Error adding task:', error);
+            }
+        }
+
+        // Update task
+        async function updateTask(taskId, newTask) {
+            try {
+                const response = await fetch(`http://localhost:5000/update_task/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ task: newTask })
+                });
+
+                if (response.ok) {
+                    // Refetch tasks to ensure consistency
+                    fetchTasks();
+                    editModal.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error updating task:', error);
+            }
+        }
+
+        // Delete task
+        async function deleteTask(taskId) {
+            try {
+                const response = await fetch(`http://localhost:5000/delete_task/${taskId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    // Remove task from DOM
+                    const taskElement = document.querySelector(`[data-id="${taskId}"]`);
+                    if (taskElement) {
+                        taskElement.remove();
+                    }
+                }
+            } catch (error) {
+                console.error('Error deleting task:', error);
+            }
+        }
+
+        // Event Listeners
+        taskForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const taskText = taskInput.value.trim();
+            if (taskText) {
+                addTask(taskText);
+            }
+        });
+
+        editForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newTask = editInput.value.trim();
+            if (newTask && currentEditTaskId) {
+                updateTask(currentEditTaskId, newTask);
+            }
+        });
+
+        cancelEditBtn.addEventListener('click', () => {
+            editModal.style.display = 'none';
+        });
+
+        // Fetch tasks when page loads
+        fetchTasks();
+    </script>
 </body>
 </html>
