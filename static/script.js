@@ -1,34 +1,32 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const API_BASE_URL = 'https://crud-operations-788o.onrender.com/api/tasks';
+    const API_URL = 'https://crud-operations-788o.onrender.com/api/tasks';
     const taskList = document.querySelector('.task-list');
     const taskForm = document.querySelector('form');
 
     // Fetch and display tasks
     async function fetchTasks() {
         try {
-            const response = await fetch(API_BASE_URL);
+            const response = await fetch(API_URL);
             const tasks = await response.json();
             
             if (taskList) {
                 taskList.innerHTML = tasks.map(task => `
-                    <li>
-                        <span class="task-content">${task.task}</span>
+                    <li data-id="${task._id}">
+                        <span>${task.task || 'No task description'}</span>
                         <div class="task-actions">
-                            <a href="/edit/${task._id.$oid}" class="edit-link">Edit</a>
-                            <a href="#" class="delete-link" data-id="${task._id.$oid}">Delete</a>
+                            <button class="edit-btn">Edit</button>
+                            <button class="delete-btn">Delete</button>
                         </div>
                     </li>
                 `).join('');
 
-                // Add event listeners for delete buttons
-                document.querySelectorAll('.delete-link').forEach(link => {
-                    link.addEventListener('click', async (e) => {
-                        e.preventDefault();
-                        const taskId = e.target.dataset.id;
-                        if (confirm('Are you sure you want to delete this task?')) {
-                            await deleteTask(taskId);
-                        }
-                    });
+                // Add event listeners for edit and delete
+                document.querySelectorAll('.edit-btn').forEach(btn => {
+                    btn.addEventListener('click', handleEdit);
+                });
+
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', handleDelete);
                 });
             }
         } catch (error) {
@@ -36,10 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Add new task
-    async function addTask(taskText) {
+    // Create Task
+    async function createTask(taskText) {
         try {
-            const response = await fetch(API_BASE_URL, {
+            const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -49,18 +47,58 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (response.ok) {
                 fetchTasks();
-                // Reset form
-                if (taskForm) taskForm.reset();
+                taskForm.reset();
             }
         } catch (error) {
-            console.error('Error adding task:', error);
+            console.error('Error creating task:', error);
         }
     }
 
-    // Delete task
+    // Handle Edit
+    function handleEdit(e) {
+        const listItem = e.target.closest('li');
+        const taskId = listItem.dataset.id;
+        const currentTask = listItem.querySelector('span').textContent;
+        
+        const newTask = prompt('Edit task:', currentTask);
+        if (newTask && newTask !== currentTask) {
+            updateTask(taskId, newTask);
+        }
+    }
+
+    // Update Task
+    async function updateTask(taskId, newTask) {
+        try {
+            const response = await fetch(`${API_URL}/${taskId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ task: newTask })
+            });
+            
+            if (response.ok) {
+                fetchTasks();
+            }
+        } catch (error) {
+            console.error('Error updating task:', error);
+        }
+    }
+
+    // Handle Delete
+    function handleDelete(e) {
+        const listItem = e.target.closest('li');
+        const taskId = listItem.dataset.id;
+        
+        if (confirm('Are you sure you want to delete this task?')) {
+            deleteTask(taskId);
+        }
+    }
+
+    // Delete Task
     async function deleteTask(taskId) {
         try {
-            const response = await fetch(`${API_BASE_URL}/${taskId}`, {
+            const response = await fetch(`${API_URL}/${taskId}`, {
                 method: 'DELETE'
             });
             
@@ -72,42 +110,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Update task (for edit page)
-    async function updateTask(taskId, taskText) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/${taskId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ task: taskText })
-            });
-            
-            if (response.ok) {
-                window.location.href = '/';
-            }
-        } catch (error) {
-            console.error('Error updating task:', error);
-        }
-    }
-
-    // Event listeners
+    // Form Submit Event
     if (taskForm) {
-        taskForm.addEventListener('submit', async (e) => {
+        taskForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const taskInput = taskForm.querySelector('input[name="task"]');
+            const taskText = taskInput.value.trim();
             
-            if (taskInput) {
-                const taskText = taskInput.value.trim();
-                if (taskText) {
-                    if (taskForm.dataset.editId) {
-                        // Edit mode
-                        await updateTask(taskForm.dataset.editId, taskText);
-                    } else {
-                        // Add mode
-                        await addTask(taskText);
-                    }
-                }
+            if (taskText) {
+                createTask(taskText);
             }
         });
     }
