@@ -11,7 +11,7 @@ client = MongoClient("mongodb+srv://mongotesting:rigorigo123@cluster0.xmy5g.mong
 db = client["todo_db"]
 collection = db["tasks"]
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def index():
     return "If you're seeing this message means Server is running fine"
 
