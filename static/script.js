@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const API_BASE_URL = 'http://localhost:5000/api/tasks';
+    const API_BASE_URL = 'https://crud-operations-788o.onrender.com/api/tasks';
     const taskList = document.querySelector('.task-list');
     const taskForm = document.querySelector('form');
 
