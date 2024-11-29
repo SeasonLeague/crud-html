@@ -1,0 +1,6 @@
+gunicorn
+uuid
+flask
+flask_cors
+pymongo
+pymongo[srv]
