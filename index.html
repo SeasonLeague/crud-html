@@ -128,7 +128,7 @@
         // Fetch tasks on page load
         async function fetchTasks() {
             try {
-                const response = await fetch('http://localhost:5000/get_tasks');
+                const response = await fetch('https://crud-operations-788o.onrender.com/get_tasks');
                 const tasks = await response.json();
                 
                 // Clear existing tasks
@@ -176,7 +176,7 @@
         // Add task
         async function addTask(taskText) {
             try {
-                const response = await fetch('http://localhost:5000/create_task', {
+                const response = await fetch('https://crud-operations-788o.onrender.com/create_task', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -198,7 +198,7 @@
         // Update task
         async function updateTask(taskId, newTask) {
             try {
-                const response = await fetch(`http://localhost:5000/update_task/${taskId}`, {
+                const response = await fetch(`https://crud-operations-788o.onrender.com/update_task/${taskId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -219,7 +219,7 @@
         // Delete task
         async function deleteTask(taskId) {
             try {
-                const response = await fetch(`http://localhost:5000/delete_task/${taskId}`, {
+                const response = await fetch(`https://crud-operations-788o.onrender.com/delete_task/${taskId}`, {
                     method: 'DELETE'
                 });
 
